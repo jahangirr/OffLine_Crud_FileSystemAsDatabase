@@ -1,0 +1,599 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="Scripts/jquery-3.6.0.js"></script>
+
+</head>
+<body>
+
+
+    <script>
+        // deleteFile();
+        function buttonDisable() {
+
+            var allButton = document.getElementsByTagName("button");
+            for (var i = 0; i < allButton.length; i++) {
+                allButton[i].disabled = true;
+            }
+
+        }
+
+        function buttonEnable() {
+
+            var allButton = document.getElementsByTagName("button");
+            for (var i = 0; i < allButton.length; i++) {
+                allButton[i].disabled = false;
+            }
+
+        }
+
+        function finalCallToSave() {
+
+            timeoutInSaveAsync();
+
+
+        }
+
+        function SaveThenFill() {
+
+            buttonDisable()
+
+            var deffered = $.Deferred();
+            setTimeout(function () {
+
+                deffered.resolve();
+            }, 500);
+
+            saveData();
+
+            return deffered.promise();
+        }
+
+        function timeoutInSaveAsync() {
+
+            SaveThenFill().done(function () {
+                fillPerson();
+
+            }).done(function () {
+
+                buttonEnable();
+
+            });
+
+
+
+
+
+        }
+
+        function saveData() {
+            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+            window.requestFileSystem(TEMPORARY, 5 * 1024 * 1024, getFile, handleError);
+            function handleError(error) {
+                alert('Save data ' + error.code);
+            }
+            function getFile(fileSystem) {
+                fileSystem.root.getFile("example.txt", { create: true }, fileOpened, handleError);
+
+                function fileOpened(fileEntry) {
+
+                    fileEntry.createWriter(writeToFile, handleError);
+                }
+                function writeToFile(fileWriter) {
+                    fileWriter.onwriteend = function () { console.log('Success'); };
+                    fileWriter.onerror = function () { console.log('Failed'); };
+                    var id = $("#id").val();
+                    var name = $("#name").val();
+                    var age = $("#age").val();
+                    var gender = $("input[name='gender']:checked").val();
+                    fileWriter.seek(fileWriter.length);
+                    fileWriter.write(new Blob([id + '***' + name + '***' + age + '***' + gender + '****'], { type: 'text/plain' }));
+
+
+                }
+
+
+
+            }
+        }
+
+
+
+        function finalCallToUpdate() {
+
+            buttonDisable();
+            fillPersonUpdate(0);
+
+
+            function fillPersonUpdate(id) {
+                var existingData = [];
+                window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+                window.requestFileSystem(TEMPORARY, 5 * 1024 * 1024, getFile, handleErrorU);
+                function getFile(fileSystem) {
+                    fileSystem.root.getFile("example.txt", { create: true }, fileOpenedU, handleErrorU);
+                }
+
+                function fileEntryFileU(fileEntry, millisecond) {
+                    var derffered = $.Deferred();
+
+                    fileEntry.file(readFileU, handleErrorU);
+                    setTimeout(function () {
+                        derffered.resolve();
+                    }, millisecond);
+                    return derffered.promise();
+                }
+
+                function fileCreateWriterU(fileEntry, millisecond) {
+                    var derffered = $.Deferred();
+                    fileEntry.createWriter(writeFileU, handleErrorU);
+                    setTimeout(function () {
+                        derffered.resolve();
+                    }, millisecond);
+                    return derffered.promise();
+                }
+
+
+                function fileOpenedU(fileEntry) {
+
+                    fileEntryFileU(fileEntry, 500).done(function () {
+
+                        fileCreateWriterU(fileEntry, 500).done(function () {
+
+                            fillPerson();
+
+                        }).done(function () {
+
+                            buttonEnable();
+
+                        });
+
+
+                    })
+
+                }
+                function readFileU(file) {
+                    var fileReader = new FileReader();
+                    fileReader.onloadend = function () {
+                        var id = $("#id").val();
+                        var name = $("#name").val();
+                        var age = $("#age").val();
+                        var gender = $("input[name='gender']:checked").val();
+                        var newData = [id + '***' + name + '***' + age + '***' + gender];
+                        try {
+                            existingData = this.result.split('****');
+
+                        } catch {
+
+                            return;
+                        }
+
+                        delete existingData[existingData.length - 1];
+                        for (var i = 0; i < existingData.length; i++) {
+
+                            if (existingData[i].split("***")[0] == id) {
+
+                                existingData[i] = newData;
+
+
+                                break;
+
+                            }
+
+                        }
+
+                    };
+                    fileReader.onerror = function () { alert(' Read File Failed'); };
+                    fileReader.readAsText(file);
+
+
+                }
+
+                function writeFileU(fileWriter) {
+
+                    fileWriter.seek(0);
+                    fileWriter.write(new Blob([existingData.join('****')], { type: 'text/plain' }));
+                }
+                function handleErrorU(error) {
+                    alert('Fail data' + error.code);
+                }
+            }
+
+
+        }
+
+
+        function finalCallToDelete(id) {
+
+            fillPersonDelete(id);
+
+            function fillPersonDelete(id) {
+
+                buttonDisable();
+
+                var $SelectedRow = $("#tr_" + id);
+                var childernList = $SelectedRow.children();
+
+                $("#id").val(childernList[0].innerHTML);
+                $("#name").val(childernList[1].innerHTML);
+                $("#age").val(childernList[2].innerHTML);
+
+
+                if (childernList[3].innerHTML == "male") {
+                    document.getElementById("female").checked = false;
+                    document.getElementById("male").checked = true;
+                }
+                else {
+                    document.getElementById("female").checked = true;
+                    document.getElementById("male").checked = false;
+                }
+
+
+
+                var existingData = [];
+                window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+                window.requestFileSystem(TEMPORARY, 5 * 1024 * 1024, getFile, handleErrorD);
+                function getFile(fileSystem) {
+                    fileSystem.root.getFile("example.txt", { create: true }, fileOpenedD, handleErrorD);
+                }
+
+                function fileEntryFileD(fileEntry, millisecond) {
+                    var derffered = $.Deferred();
+
+                    fileEntry.file(readFileD, handleErrorD);
+                    setTimeout(function () {
+                        derffered.resolve();
+                    }, millisecond);
+                    return derffered.promise();
+                }
+
+                function fileCreateWriterD(fileEntry, millisecond) {
+                    var derffered = $.Deferred();
+                    fileEntry.createWriter(writeFileD, handleErrorD);
+                    setTimeout(function () {
+                        derffered.resolve();
+                    }, millisecond);
+                    return derffered.promise();
+                }
+
+
+                function fileOpenedD(fileEntry) {
+
+                    fileEntryFileD(fileEntry, 500).done(function () {
+
+                        fileCreateWriterD(fileEntry, 500).done(function () {
+
+                            fillPerson();
+
+                        }).done(function () {
+
+                            buttonEnable();
+
+                        });
+
+
+                    })
+
+                }
+                function readFileD(file) {
+                    var fileReader = new FileReader();
+                    fileReader.onloadend = function () {
+                        var id = $("#id").val();
+                        var name = $("#name").val();
+                        var age = $("#age").val();
+                        var gender = $("input[name='gender']:checked").val();
+                        var newData = [id + '***' + name + '***' + age + '***' + gender];
+                        try {
+                            existingData = this.result.split('****');
+
+                        } catch {
+
+                            return;
+                        }
+
+                        delete existingData[existingData.length - 1];
+                        for (var i = 0; i < existingData.length; i++) {
+
+                            if (existingData[i].split("***")[0] == id) {
+
+                                delete existingData[i];
+
+                                break;
+
+                            }
+
+                        }
+
+                    };
+                    fileReader.onerror = function () { alert(' Read File Failed'); };
+                    fileReader.readAsText(file);
+
+
+                }
+
+                function writeFileD(fileWriter) {
+
+                    fileWriter.seek(0);
+                    fileWriter.write(new Blob([existingData.join('****')], { type: 'text/plain' }));
+                }
+                function handleErrorD(error) {
+                    alert('Fail data' + error.code);
+                }
+            }
+
+
+
+
+        }
+
+        function fillPerson() {
+            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+            window.requestFileSystem(TEMPORARY, 5 * 1024 * 1024, getFile, handleError);
+            function getFile(fileSystem) {
+                fileSystem.root.getFile("example.txt", { create: true }, fileOpened, handleError);
+            }
+            function fileOpened(fileEntry) {
+                fileEntry.file(readFile, handleError);
+            }
+            function readFile(file) {
+                var fileReader = new FileReader();
+                fileReader.onloadend = function (e) {
+
+                    $("#output").html();
+                    var table = '<table id="myTable"><tr><th>Id</th><th>Name</th><th>Age</th><th>Gender</th><th>update</th><th>delete</th></tr>';
+                    var existingData = e.target.result.split('****');
+
+                    for (var i = 0; i < existingData.length; i++) {
+
+
+                        if (existingData[i] != undefined && existingData[i] != '') {
+                            var singleExisting = existingData[i];
+
+                            var splitExisting = singleExisting.split('***');
+                            if (!isNaN(splitExisting[0]))
+                                table += '<tr id="' + 'tr_' + splitExisting[0] + '"><td>' + splitExisting[0] + '</td><td>' + splitExisting[1] +
+                                    '</td><td>' + splitExisting[2] + '</td><td>' + splitExisting[3] + '</td><td> <button  onclick=updateFunction(' + splitExisting[0] + ')>Update</button></td><td><button onclick=finalCallToDelete(' + splitExisting[0] + ')>Delete</button></td></tr>';
+
+                        }
+
+
+                    }
+                    // no more results
+                    table += '</table>';
+
+                    $("#output").html(table);
+                };
+                fileReader.onerror = function () { alert(' Read File Failed'); };
+                fileReader.readAsText(file);
+            }
+            function handleError(error) {
+                alert('Fail data' + error.code);
+            }
+        }
+
+
+
+
+        function deleteFile() {
+            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+            window.requestFileSystem(TEMPORARY, 5 * 1024 * 1024, getFile, handleError);
+            function getFile(fileSystem) {
+                fileSystem.root.getFile("example.txt", { create: true }, fileOpened, handleError);
+            }
+            function fileOpened(fileEntry) {
+                fileEntry.remove(fileRemoved, handleError);
+            }
+            function fileRemoved() {
+                alert('delete File Success');
+            }
+            function handleError(error) {
+                alert('delete file  ' + error.code);
+            }
+        }
+
+
+        function updateFunction(id) {
+
+            buttonDisable();
+
+
+
+
+
+
+            var $SelectedRow = $("#tr_" + id);
+            var childernList = $SelectedRow.children();
+
+            $("#id").val(childernList[0].innerHTML);
+            $("#name").val(childernList[1].innerHTML);
+            $("#age").val(childernList[2].innerHTML);
+
+
+            if (childernList[3].innerHTML == "male") {
+                document.getElementById("female").checked = false;
+                document.getElementById("male").checked = true;
+            }
+            else {
+                document.getElementById("female").checked = true;
+                document.getElementById("male").checked = false;
+            }
+
+            buttonEnable();
+
+
+
+        }
+
+
+        $(document).ready(function () {
+
+            fillPerson();
+
+
+
+            $(".btnCustom").on("mouseover", function () {
+
+                var isUpdate = false;
+                document.getElementById("btnInsert").disabled = false;
+                document.getElementById("btnUpdate").disabled = true;
+
+                $("#myTable tr").each(function () {
+
+                    if ($(this).find("td:eq(0)").text() == $("#id").val()) {
+
+                        isUpdate = true;
+
+                    }
+                });
+
+                if (isUpdate) {
+
+                    document.getElementById("btnInsert").disabled = true;
+                    document.getElementById("btnUpdate").disabled = false;
+
+                }
+
+                var id = $("#id").val();
+                if (id == '' || Number(id) == 0) {
+
+                    document.getElementById("btnUpdate").disabled = true;
+                    document.getElementById("btnInsert").disabled = true;
+
+                }
+
+
+
+            });
+
+
+            $("#id").on("mouseleave", function () {
+
+                var isUpdate = false;
+                document.getElementById("btnInsert").disabled = false;
+                document.getElementById("btnUpdate").disabled = true;
+
+                $("#myTable tr").each(function () {
+
+                    if ($(this).find("td:eq(0)").text() == $("#id").val()) {
+
+                        isUpdate = true;
+
+                    }
+                });
+
+                if (isUpdate) {
+
+                    document.getElementById("btnInsert").disabled = true;
+                    document.getElementById("btnUpdate").disabled = false;
+
+                }
+
+                var id = $("#id").val();
+                if (id == '' || Number(id) == 0) {
+
+                    document.getElementById("btnUpdate").disabled = true;
+                    document.getElementById("btnInsert").disabled = true;
+
+                }
+
+
+
+            });
+
+
+
+
+
+        });
+
+        /**/</script>
+
+    <table>
+        <tr>
+            <td>
+                <label for="id">Id:</label>
+            </td>
+            <td>
+
+                <input type="text" id="id" />
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="name">Name:</label>
+            </td>
+            <td>
+
+                <input type="text" id="name" />
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="age">Age:</label>
+            </td>
+            <td>
+
+                <input type="number" id="age" />
+
+            </td>
+        </tr>
+       
+        <tr>
+            <td>
+                <label for="male">Male:</label>
+                <input type="radio" name="gender" value="male" id="male" checked />
+            </td>
+            <td>
+
+                <label for="female">Female:</label>
+                <input type="radio" name="gender" value="female" id="female" />
+
+            </td>
+        </tr>
+    </table>
+    
+    <span>
+        <button id="btnInsert" class="btnCustom" onclick="finalCallToSave()"> Save </button>
+        <button id="btnUpdate" class="btnCustom" onclick="finalCallToUpdate()"> Update </button>
+    </span>
+    <div id="output">
+
+    </div>
+
+    <a href="Navigation.html">back</a>
+
+    <style>
+
+        .btnCustom {
+        }
+       
+
+        table, td {
+            border: 1px solid black;
+            background-color: forestgreen;
+            color: black;
+        }
+
+        table, th {
+            border: 1px solid black;
+            background-color: yellow;
+            color: red;
+        }
+
+        span{
+            background-color:seagreen;
+            font:200;
+            color:maroon;
+        }
+
+        button {
+            border-radius: 50%;
+        }
+    </style>
+
+
+</body>
+</html>
